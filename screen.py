@@ -1,4 +1,4 @@
 import pygame as pg
 
 
-screen = pg.init()
+# screen = pg.init()
