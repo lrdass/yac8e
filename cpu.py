@@ -1,9 +1,11 @@
 import numpy as np
 import binascii
+import pygame
 
 memory = np.zeros(4096, dtype=np.byte)
 vram = np.zeros(32*64, dtype=np.bool)
 
+v = []
 # to-do : properly set the font
 sprites = {
     '0': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
@@ -24,6 +26,16 @@ sprites = {
     'F': ['0xF0', '0x90',  '0x90', '0x90', '0xF0']
 }
 
+# CHIP-8 has two timers. They both count down at 60 hertz, until they reach 0.
+
+
+def timer():
+    wait = int(1/60 * 1000)
+    while True:
+        for i in range(60, 0, -1):
+            pygame.time.wait(wait)
+            return i
+
 
 def load_text_sprites():
     address = 0
@@ -37,12 +49,12 @@ def load_game(path):
     with open(path, mode='rb') as file:
         address = int('0x200', 16)
         for byte in file.read():
-            print(byte)
             memory[address] = byte
             address += 1
 
 
 load_game('games/PONG')
+timer()
 
 # load_text_sprites()
 # print(memory[0])
