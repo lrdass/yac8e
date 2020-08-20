@@ -37,14 +37,15 @@ def load_game(path):
     with open(path, mode='rb') as file:
         address = int('0x200', 16)
         for byte in file.read():
+            print(byte)
             memory[address] = byte
             address += 1
 
 
 load_game('games/PONG')
 
-load_text_sprites()
-print(memory[0])
-print(memory[1])
-print(memory[2])
-print(memory[3])
+# load_text_sprites()
+# print(memory[0])
+# print(memory[1])
+# print(memory[2])
+# print(memory[3])
