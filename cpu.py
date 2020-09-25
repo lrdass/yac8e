@@ -77,34 +77,49 @@ class CPU:
     
     def fetch_instruction(self, instruction):
 
+        def jmp_addr(self, instruction):
+            self.PC = int(instruction, 16)
+
+        def ld_i_addr(self, instruction):
+            self.I = int(instruction, 16)
+
         def ld_vx_byte(self, instruction):
             vx, byte = instruction[0], instruction[1:]
             vx = int(vx, 16)
             self.v[vx] = byte
             print(self.v)
         
+        def drw_vx_vy_nibble(self, instruction):
+            vx, vy, nibble = instruction[0], instruction[1], instruction[1:]
+            num_range = int(nibble, 16)
+            self.memory[self.I:num_range]
+        
         def sys_handler(self, instruction):
+            def cls(self):
+                self.vram = np.zeros(32*64, dtype=np.bool)
+
+            def ret(self):
+                self.PC = self.SP
+                self.SP -= 1
+
             sys_instructions = {
                 '0E0': cls,
-                '0EE': ret,
+                '0E0': ret,
             }
 
             sys_instructions.get(instruction)()
             
-            def cls(self):
-                pass
-
-            def ret(self):
-                pass
-
 
         instruction_set={
-            '0x0': sys_handler,
-            '0x6': ld_vx_byte,
+            '0': sys_handler,
+            '1': jmp_addr,
+            '6': ld_vx_byte,
+            'a': ld_i_addr,
+            'd': drw_vx_vy_nibble,
         }
 
-        code = hex(self.memory[512] << 8 | self.memory[513]) 
-        instruction_set.get(code[0:3])(self, code[3:])
+        code = hex(instruction)[2:]
+        instruction_set.get(code[0])(self, code[1:])
 
 
         
@@ -113,21 +128,10 @@ class CPU:
         self.PC = 512
         while True:
             instruction = self.memory[self.PC] << 8| self.memory[self.PC+1]
-            self.fetch_instruction(instruction) 
-            self.PC += 1
+            self.fetch_instruction(instruction)
+            self.PC += 2
 
-    instruction_set = {
-        '0x0':{},
-        '0x1':{},
-        '0x2':{},
-        '0x3':{},
-        '0x4':{},
-        '0x5':{},
-        '0x6':{},
-        '0x7':{},
-        '0x8':{},
-        '0x9':{},
-    }
+    
 
 cpu = CPU()
 cpu.run()
