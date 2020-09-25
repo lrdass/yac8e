@@ -1,12 +1,7 @@
 import numpy as np
 import binascii
-import pygame
+# import pygame
 
-memory = np.zeros(4096, dtype=np.byte)
-vram = np.zeros(32*64, dtype=np.bool)
-
-v = []
-dt = 60
 # to-do : properly set the font
 
 
@@ -42,31 +37,101 @@ the interpreter.
 '''
 
 
-def timer():
-    wait = int(1/60 * 1000)
-    while True:
-        for i in range(60, 0, -1):
-            pygame.time.wait(wait)
-            return i
+# def timer():
+#     wait = int(1/60 * 1000)
+#     while True:
+#         for i in range(60, 0, -1):
+#             pygame.time.wait(wait)
+#             return i
 
 
-def load_text_sprites():
-    address = 0
-    for sprite, data in sprites.items():
-        for byte in data:
-            memory[address] = (int(byte, 16)).to_bytes(1, byteorder='big')
-            address += 1
+
+class CPU:
+
+    memory = [b'0'] * 4096
+    vram = np.zeros(32*64, dtype=np.bool)
+
+    PC = 512
+    SP = 0
+    I = 0
+    v = [b'0']*16
+
+    DT = 60
+    ST = 60
+
+    def __init__(self):
+        self._load_text_sprites()
+        self._load_game('games/PONG')
+
+    def _load_text_sprites(self):
+        address = 0
+        for sprite, data in sprites.items():
+            print(sprite)
+
+    def _load_game(self, path):
+        with open(path, mode='rb') as file:
+            address = int('0x200', 16)
+            for byte in file.read():
+                self.memory[address] = byte
+                address += 1
+    
+    def fetch_instruction(self, instruction):
+
+        def ld_vx_byte(self, instruction):
+            vx, byte = instruction[0], instruction[1:]
+            vx = int(vx, 16)
+            self.v[vx] = byte
+            print(self.v)
+        
+        def sys_handler(self, instruction):
+            sys_instructions = {
+                '0E0': cls,
+                '0EE': ret,
+            }
+
+            sys_instructions.get(instruction)()
+            
+            def cls(self):
+                pass
+
+            def ret(self):
+                pass
 
 
-def load_game(path):
-    with open(path, mode='rb') as file:
-        address = int('0x200', 16)
-        for byte in file.read():
-            memory[address] = byte
-            address += 1
+        instruction_set={
+            '0x0': sys_handler,
+            '0x6': ld_vx_byte,
+        }
+
+        code = hex(self.memory[512] << 8 | self.memory[513]) 
+        instruction_set.get(code[0:3])(self, code[3:])
 
 
-load_game('games/PONG')
+        
+    
+    def run(self):
+        self.PC = 512
+        while True:
+            instruction = self.memory[self.PC] << 8| self.memory[self.PC+1]
+            self.fetch_instruction(instruction) 
+            self.PC += 1
+
+    instruction_set = {
+        '0x0':{},
+        '0x1':{},
+        '0x2':{},
+        '0x3':{},
+        '0x4':{},
+        '0x5':{},
+        '0x6':{},
+        '0x7':{},
+        '0x8':{},
+        '0x9':{},
+    }
+
+cpu = CPU()
+cpu.run()
+print(cpu.memory)
 # timer()
 
 # load_text_sprites()
