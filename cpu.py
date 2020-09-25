@@ -78,7 +78,7 @@ class CPU:
     def fetch_instruction(self, instruction):
 
         def jmp_addr(self, instruction):
-            self.PC = int(instruction, 16)
+            self.PC = int(0x0 | instruction, 16)
 
         def ld_i_addr(self, instruction):
             self.I = int(instruction, 16)
