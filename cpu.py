@@ -200,12 +200,34 @@ class CPU:
                 vx = int(vx, 16)
                 self.v[vx] = self.DT
             
+            def ld_vx_k(self, vx):
+                # wait key-press and store value of key into vx
+                print('wait keyboard')
+
+            def ld_st_vx(self, vx):
+                vx = int(vx, 16)
+                self.DT = self.v[vx]
+            
+            def add_i_vx(self, vx):
+                vx = int(vx, 16)
+                self.I += self.v[vx]
+
+            def ld_i_vx(self, vx):
+                vx = int(vx, 16)
+                for i in range(vx):
+                    self.memory[self.I + i] = self.v[i]
+                self.I += 1 + vx
+            
             sys_timer_instructions = {
                 '15': ld_dt_vx,
                 '33': ld_b_vx,
                 '65': ld_vx_I,
                 '29': ld_f_vx,
                 '07': ld_vx_dt,
+                '0a': ld_vx_k,
+                '18': ld_st_vx,
+                '1e': add_i_vx,
+                '55': ld_i_vx,
             }
 
             sys_timer_instructions.get(op)(self, vx)
