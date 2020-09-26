@@ -1,28 +1,28 @@
 import numpy as np
 import binascii
 import random
-# import pygame
+import pygame
 
 # to-do : properly set the font
 
 
 sprites = {
-    '0': ['F0', '90',  '90', '90', 'F0'],
-    '1': ['20', '60',  '20', '20', '70'],
-    '2': ['F0', '90',  '90', '90', 'F0'],
-    '3': ['F0', '90',  '90', '90', 'F0'],
-    '4': ['F0', '90',  '90', '90', 'F0'],
-    '5': ['F0', '90',  '90', '90', 'F0'],
-    '6': ['F0', '90',  '90', '90', 'F0'],
-    '7': ['F0', '90',  '90', '90', 'F0'],
-    '8': ['F0', '90',  '90', '90', 'F0'],
-    '9': ['F0', '90',  '90', '90', 'F0'],
-    'A': ['F0', '90',  '90', '90', 'F0'],
-    'B': ['F0', '90',  '90', '90', 'F0'],
-    'C': ['F0', '90',  '90', '90', 'F0'],
-    'D': ['F0', '90',  '90', '90', 'F0'],
-    'E': ['F0', '90',  '90', '90', 'F0'],
-    'F': ['F0', '90',  '90', '90', 'F0']
+'0': ['F0', '90', '90', '90', 'F0'],
+'1': ['20', '60', '20', '20', '70'], 
+'2': ['F0', '10', 'F0', '80', 'F0'], 
+'3': ['F0', '10', 'F0', '10', 'F0'], 
+'4': ['90', '90', 'F0', '10', '10'], 
+'5': ['F0', '80', 'F0', '10', 'F0'], 
+'6': ['F0', '80', 'F0', '90', 'F0'], 
+'7': ['F0', '10', '20', '40', '40'], 
+'8': ['F0', '90', 'F0', '90', 'F0'], 
+'9': ['F0', '90', 'F0', '10', 'F0'], 
+'A': ['F0', '90', 'F0', '90', '90'], 
+'B': ['E0', '90', 'E0', '90', 'E0'], 
+'C': ['F0', '80', '80', '80', 'F0'], 
+'D': ['E0', '90', '90', '90', 'E0'], 
+'E': ['F0', '80', 'F0', '80', 'F0'], 
+'F': ['F0', '80', 'F0', '80', '80']  
 }
 
 '''
@@ -45,12 +45,13 @@ the interpreter.
 #             pygame.time.wait(wait)
 #             return i
 
+WIDTH, HEIGHT= 64*8, 32*8
 
 
 class CPU:
 
     memory = [b'0000 0000'] * 4096
-    vram = np.zeros(32*64, dtype=np.bool)
+    vram = np.zeros(64*32, dtype=np.bool)
     stack = [b'0000 0000'] * 64
 
     PC = 512
@@ -69,12 +70,14 @@ class CPU:
         self._load_text_sprites()
         self._load_game('games/PONG')
         self.runnig = True
+        self.emulator_screen = pygame.init()
+        self.display = pygame.display.set_mode((8*64, 8*32))
 
     def _load_text_sprites(self):
         address = 0
         for sprite, data in sprites.items():
             for byte in data:
-                self.memory[address] = byte
+                self.memory[address] = int(byte,16)
                 address +=1
 
     def _load_game(self, path):
@@ -109,11 +112,22 @@ class CPU:
 
             vx = self.v[vx]
             vy = self.v[vy]
+            self.v[15] = 0
 
             # draw function, save for last
 
             num_range = int(nibble, 16)
-        
+            for i in range(num_range):
+                pixel = self.memory[self.I + i]
+                for k,bit in enumerate(bin(pixel)[2:]):
+                    if int(bit,2) & (0x8 >> k) != 0:
+                        if self.vram[vx+i + ((vy + k)*64)]:
+                            self.v[15] = 1
+                        self.vram[vx+i + ((vy + k)*64)] ^= 1
+
+
+
+
         def call_addr(self, nnn):
             self.SP += 1
             self.stack.append(self.PC)
@@ -329,20 +343,40 @@ class CPU:
         instruction_set.get(code[0])(self, code[1:])
 
 
-        
-    
     def run(self):
         self.PC = 512
+        canvas = pygame.Surface((WIDTH,HEIGHT))
+
         while self.runnig:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.exit()
+                    sys.exit()
+            
+            self.display.fill((0,0,0))
+
+            for i,pixel in enumerate(self.vram):
+                if pixel:
+                    pygame.draw.rect(
+                        canvas,
+                        pygame.Color(255,255,255),
+                        pygame.Rect((i*8) % WIDTH, ((i // 64) * 8) % HEIGHT , 8,8)
+                    )
+            
+            self.display.blit(canvas, (0,0))
+
+            pygame.display.update()
+
             instruction = self.memory[self.PC] << 8| self.memory[self.PC+1]
             self.fetch_instruction(instruction)
             self.PC += 2
+
             self.DT = 0
+
         
         print('ended game :)')
 
     
-
 cpu = CPU()
 cpu.run()
 print(cpu.memory)
