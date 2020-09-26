@@ -50,6 +50,7 @@ class CPU:
 
     memory = [b'0'] * 4096
     vram = np.zeros(32*64, dtype=np.bool)
+    stack = [b'0'] * 64
 
     PC = 512
     SP = 0
@@ -75,24 +76,42 @@ class CPU:
                 self.memory[address] = byte
                 address += 1
     
+    def read_vram(self, x, y, offset=0):
+        return self.vram[x + y*64 + offset]
+
+    def put_vram(self, x, y, value):
+        self.vram[x+y*64] = value
+
     def fetch_instruction(self, instruction):
+        def jmp_addr(self, nnn):
+            self.PC = int(nnn, 16)
 
-        def jmp_addr(self, instruction):
-            self.PC = int(0x0 | instruction, 16)
-
-        def ld_i_addr(self, instruction):
-            self.I = int(instruction, 16)
+        def ld_i_addr(self, nnn):
+            self.I = int(nnn, 16)
 
         def ld_vx_byte(self, instruction):
             vx, byte = instruction[0], instruction[1:]
             vx = int(vx, 16)
-            self.v[vx] = byte
+            self.v[vx] = int(byte, 16)
             print(self.v)
         
-        def drw_vx_vy_nibble(self, instruction):
-            vx, vy, nibble = instruction[0], instruction[1], instruction[1:]
+        def drw_vx_vy_nibble(self, nnn):
+            vx, vy, nibble = nnn[0], nnn[1], nnn[2]
+            vx = int(vx, 16)
+            vy = int(vy, 16)
+
+            vx = self.v[vx]
+            vy = self.v[vy]
+
+            # draw function, save for last
+
             num_range = int(nibble, 16)
-            self.memory[self.I:num_range]
+        
+        def call_addr(self, nnn):
+            self.SP += 1
+            self.stack.append(self.PC)
+
+            self.PC = int(nnn, 16)
         
         def sys_handler(self, instruction):
             def cls(self):
@@ -108,6 +127,35 @@ class CPU:
             }
 
             sys_instructions.get(instruction)()
+        
+        def sys_manager(self, nnn):
+            vx, op = nnn[0], nnn[1:]
+
+            def ld_dt_vx(self, vx):
+                vx = int(vx, 16)
+                self.dt = self.v[vx]
+            
+            def ld_b_vx(self, vx):
+                vx = int(vx, 16)
+                vx = self.v[vx]
+                # isso ta feio, mas bls
+                self.memory[self.I] = int(str(vx // 100)[-1])
+                self.memory[self.I + 1] = int(str(vx // 10)[-1])
+                self.memory[self.I + 2] = int(str(vx)[-1])
+            
+            def ld_vx_I(self, vx):
+                vx = int(vx, 16)
+                for i in range(vx):
+                    self.v[0] = self.memory[self.I + i]
+                
+                self.I += vx + 1
+
+            sys_handler_instructions = {
+                '15': ld_dt_vx,
+                '33': ld_b_vx,
+                '65': ld_vx_I,
+            }
+            sys_handler_instructions.get(op)(self, vx)
             
 
         instruction_set={
@@ -116,6 +164,8 @@ class CPU:
             '6': ld_vx_byte,
             'a': ld_i_addr,
             'd': drw_vx_vy_nibble,
+            '2': call_addr,
+            'f': sys_manager,
         }
 
         code = hex(instruction)[2:]
