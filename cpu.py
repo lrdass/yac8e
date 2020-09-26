@@ -1,27 +1,28 @@
 import numpy as np
 import binascii
+import random
 # import pygame
 
 # to-do : properly set the font
 
 
 sprites = {
-    '0': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    '1': ['0x20', '0x60', '0x20', '0x20', '0x70'],
-    '2': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    '3': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    '4': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    '5': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    '6': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    '7': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    '8': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    '9': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    'A': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    'B': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    'C': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    'D': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    'E': ['0xF0', '0x90',  '0x90', '0x90', '0xF0'],
-    'F': ['0xF0', '0x90',  '0x90', '0x90', '0xF0']
+    '0': ['F0', '90',  '90', '90', 'F0'],
+    '1': ['20', '60',  '20', '20', '70'],
+    '2': ['F0', '90',  '90', '90', 'F0'],
+    '3': ['F0', '90',  '90', '90', 'F0'],
+    '4': ['F0', '90',  '90', '90', 'F0'],
+    '5': ['F0', '90',  '90', '90', 'F0'],
+    '6': ['F0', '90',  '90', '90', 'F0'],
+    '7': ['F0', '90',  '90', '90', 'F0'],
+    '8': ['F0', '90',  '90', '90', 'F0'],
+    '9': ['F0', '90',  '90', '90', 'F0'],
+    'A': ['F0', '90',  '90', '90', 'F0'],
+    'B': ['F0', '90',  '90', '90', 'F0'],
+    'C': ['F0', '90',  '90', '90', 'F0'],
+    'D': ['F0', '90',  '90', '90', 'F0'],
+    'E': ['F0', '90',  '90', '90', 'F0'],
+    'F': ['F0', '90',  '90', '90', 'F0']
 }
 
 '''
@@ -48,9 +49,9 @@ the interpreter.
 
 class CPU:
 
-    memory = [b'0'] * 4096
+    memory = [b'0000 0000'] * 4096
     vram = np.zeros(32*64, dtype=np.bool)
-    stack = [b'0'] * 64
+    stack = [b'0000 0000'] * 64
 
     PC = 512
     SP = 0
@@ -60,14 +61,21 @@ class CPU:
     DT = 60
     ST = 60
 
+    k = [1] * 16
+
+    runnig = False
+
     def __init__(self):
         self._load_text_sprites()
         self._load_game('games/PONG')
+        self.runnig = True
 
     def _load_text_sprites(self):
         address = 0
         for sprite, data in sprites.items():
-            print(sprite)
+            for byte in data:
+                self.memory[address] = byte
+                address +=1
 
     def _load_game(self, path):
         with open(path, mode='rb') as file:
@@ -93,7 +101,6 @@ class CPU:
             vx, byte = instruction[0], instruction[1:]
             vx = int(vx, 16)
             self.v[vx] = int(byte, 16)
-            print(self.v)
         
         def drw_vx_vy_nibble(self, nnn):
             vx, vy, nibble = nnn[0], nnn[1], nnn[2]
@@ -113,22 +120,57 @@ class CPU:
 
             self.PC = int(nnn, 16)
         
+        def add_vx_byte(self, nnn):
+            vx, kk = nnn[0], nnn[1:]
+            vx = int(vx, 16)
+            kk = int(kk, 16)
+
+            self.v[vx] += kk
+
+        def se_vx_byte(self, xkk):
+            vx, kk = xkk[0], xkk[1:]
+            vx = int(vx, 16)
+            kk = int(kk, 16)
+
+            if self.v[vx] == kk:
+                self.PC += 2
+
+        def sne_vx_byte(self, xkk):
+            vx, kk = xkk[0], xkk[1:]
+            vx = int(vx, 16)
+            kk = int(kk, 16)
+
+            if self.v[vx] != kk:
+                self.PC += 2
+        
+        def rnd_vx_byte(self, xkk):
+            x, kk = xkk[0], xkk[1:]
+            x = int(x, 16)
+            kk = int(kk, 16)
+
+            self.v[x] = random.randint(0,255) & kk
+
+
         def sys_handler(self, instruction):
             def cls(self):
                 self.vram = np.zeros(32*64, dtype=np.bool)
 
             def ret(self):
-                self.PC = self.SP
+                self.PC = self.stack.pop()
                 self.SP -= 1
+            
+            def end(self):
+                self.running = False
 
             sys_instructions = {
-                '0E0': cls,
-                '0E0': ret,
+                '0e0': cls,
+                '0ee': ret,
+                '000': end,
             }
 
-            sys_instructions.get(instruction)()
+            sys_instructions.get(instruction)(self)
         
-        def sys_manager(self, nnn):
+        def sys_timer(self, nnn):
             vx, op = nnn[0], nnn[1:]
 
             def ld_dt_vx(self, vx):
@@ -149,14 +191,101 @@ class CPU:
                     self.v[0] = self.memory[self.I + i]
                 
                 self.I += vx + 1
-
-            sys_handler_instructions = {
+            
+            def ld_f_vx(self, vx):
+                vx = int(vx, 16)
+                self.I = vx*5
+            
+            def ld_vx_dt(self, vx):
+                vx = int(vx, 16)
+                self.v[vx] = self.DT
+            
+            sys_timer_instructions = {
                 '15': ld_dt_vx,
                 '33': ld_b_vx,
                 '65': ld_vx_I,
+                '29': ld_f_vx,
+                '07': ld_vx_dt,
             }
-            sys_handler_instructions.get(op)(self, vx)
+
+            sys_timer_instructions.get(op)(self, vx)
+        
+        def skip_key_instructions(self, xnn):
+            x, op = xnn[0], xnn[1:]
+            def sknp_vx(self, x):
+                x = int(x, 16)
+                if self.k[self.v[x]]:
+                    self.PC+=2
             
+            instruction_set = {
+                'a1': sknp_vx,
+            }
+
+            instruction_set.get(op)(self, x)
+        
+
+        def sys_ula(self, xyn):
+            x, y, op = xyn[0], xyn[1], xyn[2]
+
+            def ld_vx_vy(self, x,y):
+                x = int(x, 16)
+                y = int(y, 16)
+
+                self.v[x] = self.v[y]
+
+            def or_vx_vy(self, x,y):
+                x = int(x, 16)
+                y = int(y, 16)
+
+                self.v[x] = self.v[x] | self.v[y]
+
+            def and_vx_vy(self, x,y):
+                x = int(x, 16)
+                y = int(y, 16)
+
+                self.v[x] = self.v[x] & self.v[y]
+            
+            def xor_vx_vy(self, x,y):
+                x = int(x, 16)
+                y = int(y, 16)
+
+                self.v[x] = self.v[x] ^ self.v[y]
+            
+            def add_vx_vy(self, x,y):
+                x = int(x, 16)
+                y = int(y, 16)
+
+                self.v[x] = self.v[x] + self.v[y] % 255
+                self.v[15] = 1 if self.v[x] + self.v[y] > 255 else 0
+            
+            def sub_vx_vy(self, x,y):
+                x = int(x, 16)
+                y = int(y, 16)
+
+                if self.v[x] < self.v[y]:
+                    self.v[15] = 1
+                else:
+                    self.v[x] = self.v[x] - self.v[y]
+            
+            def shr_vx_vy(self, x,y):
+                x = int(x, 16)
+                y = int(y, 16)
+
+                self.v[x] = self.v[x] >> 1
+
+
+            instruction_set = {
+                '0': ld_vx_vy,
+                '1': or_vx_vy,
+                '2': and_vx_vy,
+                '3': xor_vx_vy,
+                '4': add_vx_vy,
+                '5': sub_vx_vy,
+                '6': shr_vx_vy,
+            }
+
+            instruction_set.get(op)(self, x,y)
+
 
         instruction_set={
             '0': sys_handler,
@@ -165,10 +294,16 @@ class CPU:
             'a': ld_i_addr,
             'd': drw_vx_vy_nibble,
             '2': call_addr,
-            'f': sys_manager,
+            'f': sys_timer,
+            '7': add_vx_byte,
+            '3': se_vx_byte,
+            '4': sne_vx_byte,
+            'c': rnd_vx_byte,
+            'e': skip_key_instructions,
+            '8': sys_ula,
         }
 
-        code = hex(instruction)[2:]
+        code = format(instruction, '04x')
         instruction_set.get(code[0])(self, code[1:])
 
 
@@ -176,10 +311,13 @@ class CPU:
     
     def run(self):
         self.PC = 512
-        while True:
+        while self.runnig:
             instruction = self.memory[self.PC] << 8| self.memory[self.PC+1]
             self.fetch_instruction(instruction)
             self.PC += 2
+            self.DT = 0
+        
+        print('ended game :)')
 
     
 
