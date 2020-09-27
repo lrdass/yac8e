@@ -62,7 +62,7 @@ class CPU:
     DT = 60
     ST = 60
 
-    k = [1] * 16
+    key = [False]*16
 
     runnig = False
 
@@ -124,9 +124,6 @@ class CPU:
                         if self.vram[vx+i + ((vy + k)*64)]:
                             self.v[15] = 1
                         self.vram[vx+i + ((vy + k)*64)] ^= 1
-
-
-
 
         def call_addr(self, nnn):
             self.SP += 1
@@ -352,6 +349,42 @@ class CPU:
                 if event.type == pygame.QUIT:
                     pygame.exit()
                     sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.type == pygame.K_1:
+                        self.key[0] = True
+                    if event.type == pygame.K_2:
+                        self.key[1] = True
+                    if event.type == pygame.K_3:
+                        self.key[2] = True
+                    if event.type == pygame.K_4:
+                        self.key[3] = True
+                    if event.type == pygame.K_q:
+                        self.key[4] = True
+                    if event.type == pygame.K_w:
+                        self.key[5] = True
+                    if event.type == pygame.K_e:
+                        self.key[6] = True
+                    if event.type == pygame.K_r:
+                        self.key[7] = True
+                    if event.type == pygame.K_a:
+                        self.key[8] = True
+                    if event.type == pygame.K_s:
+                        self.key[9] = True
+                    if event.type == pygame.K_d:
+                        self.key[10] = True
+                    if event.type == pygame.K_f:
+                        self.key[11] = True
+                    if event.type == pygame.K_z:
+                        self.key[12] = True
+                    if event.type == pygame.K_x:
+                        self.key[13] = True
+                    if event.type == pygame.K_c:
+                        self.key[14] = True
+                    if event.type == pygame.K_c:
+                        self.key[15] = True
+                elif event.type == pygame.KEYUP:
+                    for i in range(len(self.key)):
+                        self.key[i] = False
             
             self.display.fill((0,0,0))
 
@@ -371,7 +404,10 @@ class CPU:
             self.fetch_instruction(instruction)
             self.PC += 2
 
-            self.DT = 0
+            if self.DT > 0:
+                self.DT -= 1
+            
+            pygame.time.wait( 1000 // 60 )
 
         
         print('ended game :)')
