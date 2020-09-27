@@ -79,6 +79,8 @@ class CPU:
             for byte in data:
                 self.memory[address] = int(byte,16)
                 address +=1
+        
+        print(self.memory[0:80])
 
     def _load_game(self, path):
         with open(path, mode='rb') as file:
@@ -95,7 +97,7 @@ class CPU:
 
     def fetch_instruction(self, instruction):
         def jmp_addr(self, nnn):
-            self.PC = int(nnn, 16)
+            self.PC = int(nnn, 16) - 2
 
         def ld_i_addr(self, nnn):
             self.I = int(nnn, 16)
@@ -106,6 +108,7 @@ class CPU:
             self.v[vx] = int(byte, 16)
         
         def drw_vx_vy_nibble(self, nnn):
+            # this function is not working properly
             vx, vy, nibble = nnn[0], nnn[1], nnn[2]
             vx = int(vx, 16)
             vy = int(vy, 16)
@@ -120,10 +123,10 @@ class CPU:
             for i in range(num_range):
                 pixel = self.memory[self.I + i]
                 for k,bit in enumerate(bin(pixel)[2:]):
-                    if int(bit,2) & (0x8 >> k) != 0:
+                    # if int(bit,2) & (0x8 >> k) != 0:
                         if self.vram[vx+i + ((vy + k)*64)]:
                             self.v[15] = 1
-                        self.vram[vx+i + ((vy + k)*64)] ^= 1
+                        self.vram[vx+i + ((vy + k)*64)] ^= True
 
         def call_addr(self, nnn):
             self.SP += 1
@@ -247,7 +250,7 @@ class CPU:
             x, op = xnn[0], xnn[1:]
             def sknp_vx(self, x):
                 x = int(x, 16)
-                if self.k[self.v[x]]:
+                if self.key[self.v[x]]:
                     self.PC+=2
             
             instruction_set = {
@@ -382,14 +385,12 @@ class CPU:
                         self.key[14] = True
                     if event.type == pygame.K_c:
                         self.key[15] = True
-                elif event.type == pygame.KEYUP:
-                    for i in range(len(self.key)):
-                        self.key[i] = False
             
             self.display.fill((0,0,0))
 
             for i,pixel in enumerate(self.vram):
                 if pixel:
+                    # this is also not working properly I think
                     pygame.draw.rect(
                         canvas,
                         pygame.Color(255,255,255),
@@ -400,7 +401,7 @@ class CPU:
 
             pygame.display.update()
 
-            instruction = self.memory[self.PC] << 8| self.memory[self.PC+1]
+            instruction = self.memory[self.PC] << 8 | self.memory[self.PC+1]
             self.fetch_instruction(instruction)
             self.PC += 2
 
