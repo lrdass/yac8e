@@ -115,18 +115,18 @@ class CPU:
 
             vx = self.v[vx]
             vy = self.v[vy]
-            self.v[15] = 0
+            self.v[0xF] = 0
 
             # draw function, save for last
 
-            num_range = int(nibble, 16)
-            for i in range(num_range):
-                pixel = self.memory[self.I + i]
-                for k,bit in enumerate(bin(pixel)[2:]):
-                    # if int(bit,2) & (0x8 >> k) != 0:
-                        if self.vram[vx+i + ((vy + k)*64)]:
-                            self.v[15] = 1
-                        self.vram[vx+i + ((vy + k)*64)] ^= True
+            height = int(nibble, 16)
+            for i in range(height):
+                sprite = self.memory[self.I + i]
+                for k,bit in enumerate(bin(sprite)[2:]):
+                    if int(bit,2) != 0:
+                        if self.vram[(vx+i + ((vy + k)*64))]:
+                            self.v[0xF] = 1
+                        self.vram[(vx+i + ((vy + k)*64))] ^= True
 
         def call_addr(self, nnn):
             self.SP += 1
@@ -353,37 +353,38 @@ class CPU:
                     pygame.exit()
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
-                    if event.type == pygame.K_1:
+                    if event.key == pygame.K_1:
+                        print('k1 down')
                         self.key[0] = True
-                    if event.type == pygame.K_2:
+                    if event.key == pygame.K_2:
                         self.key[1] = True
-                    if event.type == pygame.K_3:
+                    if event.key == pygame.K_3:
                         self.key[2] = True
-                    if event.type == pygame.K_4:
+                    if event.key == pygame.K_4:
                         self.key[3] = True
-                    if event.type == pygame.K_q:
+                    if event.key == pygame.K_q:
                         self.key[4] = True
-                    if event.type == pygame.K_w:
+                    if event.key == pygame.K_w:
                         self.key[5] = True
-                    if event.type == pygame.K_e:
+                    if event.key == pygame.K_e:
                         self.key[6] = True
-                    if event.type == pygame.K_r:
+                    if event.key == pygame.K_r:
                         self.key[7] = True
-                    if event.type == pygame.K_a:
+                    if event.key == pygame.K_a:
                         self.key[8] = True
-                    if event.type == pygame.K_s:
+                    if event.key == pygame.K_s:
                         self.key[9] = True
-                    if event.type == pygame.K_d:
+                    if event.key == pygame.K_d:
                         self.key[10] = True
-                    if event.type == pygame.K_f:
+                    if event.key == pygame.K_f:
                         self.key[11] = True
-                    if event.type == pygame.K_z:
+                    if event.key == pygame.K_z:
                         self.key[12] = True
-                    if event.type == pygame.K_x:
+                    if event.key == pygame.K_x:
                         self.key[13] = True
-                    if event.type == pygame.K_c:
+                    if event.key == pygame.K_c:
                         self.key[14] = True
-                    if event.type == pygame.K_c:
+                    if event.key == pygame.K_c:
                         self.key[15] = True
             
             self.display.fill((0,0,0))
@@ -408,7 +409,7 @@ class CPU:
             if self.DT > 0:
                 self.DT -= 1
             
-            pygame.time.wait( 1000 // 60 )
+            pygame.time.wait(1000//60)
 
         
         print('ended game :)')
